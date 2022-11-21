@@ -4,10 +4,10 @@ const path = require('path')
 const cors = require('cors')
 const app = express()
 const PORT = process.env.PORT || 8000 
-const { collection, getDocs, query, where, setDoc, doc} = require("firebase/firestore"); 
+const { collection, getDocs, query, where, setDoc, doc, updateDoc } = require("firebase/firestore"); 
 const firebase = require("firebase/storage") 
 const {storage, firestore} = require('./firebase');
-const { uploadBytes } = require('firebase/storage');
+const { uploadBytes, getStorage, ref, deleteObject } = require('firebase/storage');
 const multer = require('multer');
 const { auth } = require('./firebase') 
 const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = require('firebase/auth') 
@@ -31,19 +31,31 @@ app.post('/uploadPartnerToFirestore', async (req, res) => {
     await setDoc(doc(firestore, "partners", req.body.partnerId), req.body);
 })
 
-//{signIn component}
+//{SignIn component}
 app.post('/fetchPartnerProfile', async (req, res) => {
-    const partner = await signInWithEmailAndPassword(auth, req.body.email, req.body.password)
-    const q = query(collection(firestore, "partners"), where("email", "==", req.body.email));
-    const querySnapshot = await getDocs(q);
-
-    querySnapshot.forEach(async (doc) => {
+    await signInWithEmailAndPassword(auth, req.body.email, req.body.password)
+    .then(async (userCredential) => {
+        const user = userCredential.user
+        const q = query(collection(firestore, "partners"), where("email", "==", user.email));
+        const querySnapshot = await getDocs(q);
+        let quriedUser = []
+        querySnapshot.forEach(async (doc) => {
+           quriedUser = doc.data()
+        });
         res.json([
-            doc.data()
+           quriedUser
         ])
-    });
+    })
 })
 
+//{PartnerProfilePage Component}
+app.post('/updatePartnerProfile', async (req, res) => {
+    const partnerId = req.body.partnerId
+    const data = req.body
+    console.log(data,'/updatePartnerProfile')
+    const partnerRef = doc(firestore, "partners", partnerId);
+    await updateDoc(partnerRef, data);
+})
 
 //START OF PARTNERS ROUTES
 app.get('/apparalPartners', async (req, res ) => {
@@ -107,6 +119,28 @@ app.post('/uploadPhotoLogo', multer().single('file'), (req, res) => {
     .then(async (snapshot) => {
         const logoPhotoUrl = await firebase.getDownloadURL(firebase.ref(storage, storageRef))
         console.log('Uploaded a blob or file!');
+        res.send(logoPhotoUrl)
+    });
+})
+app.post('/updatePhoto', multer().single('file'), (req, res) => {
+    console.log(req.body.photoToDelete)
+    const photoToDeleteRef = ref(storage, req.body.photoToDelete);
+    deleteObject(photoToDeleteRef)
+    .then(() => {
+        console.log('Photo Deleted')
+    }).catch((error) => {
+    // Uh-oh, an error occurred!
+        console.log(error)
+    });  
+    const photoRef = req.file.originalname
+    const storageRef = firebase.ref(storage, photoRef); 
+    const metadata = {
+        contentType: 'image/jpeg'
+    };
+    const uploadTask = uploadBytes(storageRef, req.file.buffer, metadata)
+    .then(async (snapshot) => {
+        const logoPhotoUrl = await firebase.getDownloadURL(firebase.ref(storage, storageRef))
+        console.log('Uploaded a blob or file!', logoPhotoUrl);
         res.send(logoPhotoUrl)
     });
 })
