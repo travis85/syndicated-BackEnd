@@ -2,6 +2,8 @@
 const { initializeApp } = require("firebase/app") ;
 const { getFirestore} = require("firebase/firestore") ;
 const { getStorage } = require("firebase/storage");
+const { getAuth, inMemoryPersistence, setPersistence} = require('firebase/auth') ;
+
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
@@ -19,8 +21,12 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const firestore = getFirestore(app);
 const storage = getStorage()
-
+const auth = getAuth(app);
+(async () => {
+  await setPersistence(auth, inMemoryPersistence);
+})();
 module.exports = {
   firestore,
   storage,
+  auth
 }
