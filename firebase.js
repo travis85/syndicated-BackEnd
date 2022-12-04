@@ -1,20 +1,16 @@
-// Import the functions you need from the SDKs you need
 const { initializeApp } = require("firebase/app") ;
 const { getFirestore} = require("firebase/firestore") ;
 const { getStorage } = require("firebase/storage");
 const { getAuth, inMemoryPersistence, setPersistence} = require('firebase/auth') ;
+require('dotenv').config({path:'.env'});
 
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
 const firebaseConfig = {
-  apiKey: "AIzaSyCbS9LiQLFgO3O2RCZnCx1OySkkRH9IJJw",
-  authDomain: "syndicated-d9305.firebaseapp.com",
-  projectId: "syndicated-d9305",
-  storageBucket: "syndicated-d9305.appspot.com",
-  messagingSenderId: "210361917358",
-  appId: "1:210361917358:web:aaf9cff7515f07321d323f"
+  apiKey: process.env.FIREBASE_API_KEY,
+  authDomain: process.env.FIREBASE_AUTHDOMAIN,
+  projectId: process.env.FIREBASE_PROJECTID,
+  storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: process.env.FIREBASE_MESSAGING_SENDER_ID,
+  appId: process.env.FIREBASE_APP_ID
 };
 
 // Initialize Firebase
@@ -25,8 +21,11 @@ const auth = getAuth(app);
 (async () => {
   await setPersistence(auth, inMemoryPersistence);
 })();
+
 module.exports = {
   firestore,
   storage,
   auth
 }
+
+
