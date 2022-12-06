@@ -4,13 +4,13 @@ const path = require('path')
 const cors = require('cors')
 const app = express()
 const PORT = process.env.PORT || 8000 
-const { collection, getDocs, query, where, setDoc, doc, updateDoc, arrayRemove, arrayUnion, onSnapshot } = require("firebase/firestore"); 
+const { collection, getDocs, query, where, setDoc, doc, updateDoc, arrayRemove, arrayUnion, onSnapshot, deleteDoc } = require("firebase/firestore"); 
 const firebase = require("firebase/storage") 
 const {storage, firestore} = require('./firebase');
 const { uploadBytes, ref, deleteObject } = require('firebase/storage');
 const multer = require('multer');
 const { auth } = require('./firebase') 
-const { createUserWithEmailAndPassword, signInWithEmailAndPassword } = require('firebase/auth') 
+const { createUserWithEmailAndPassword, signInWithEmailAndPassword, deleteUser } = require('firebase/auth') 
 const { v4  }  = require('uuid');
  
 
@@ -34,6 +34,22 @@ app.post('/uploadPartnerToFirestore', async (req, res) => {
 })
 
 // {PartnerprofilePage}
+app.post('/deleteProfile', async (req, res) => {
+    const photoToDeleteRef = ref(storage, req.body.companyLogo);
+    const id = req.body.partnerId
+    const user = auth.currentUser
+    
+    await deleteDoc(doc(firestore, 'partners', id))
+    .then(res.send('Profile Deleted'))
+    .then(deleteUser(user))
+    .then(deleteObject(photoToDeleteRef))
+    .catch((error) => {
+        res.send('error')
+    })
+
+})
+
+// {PartnerprofilePage}
 app.post('/deleteProduct', async (req, res) => {
     const photoToDeleteRef = ref(storage, req.body.product.productPhoto);
     deleteObject(photoToDeleteRef)
@@ -41,6 +57,7 @@ app.post('/deleteProduct', async (req, res) => {
     const productToDelete = req.body.product
     console.log(productToDelete, 'delete')
     let data
+    // Remove the 'capital' field from the document
     await updateDoc(partnerRef, {
         products: arrayRemove(productToDelete)
     })
@@ -50,6 +67,7 @@ app.post('/deleteProduct', async (req, res) => {
     })
     res.json(snapShot)
 })
+
 // {PartnerprofilePage}
 app.post('/addProduct', async (req, res) => {
     const partnerRef = doc(firestore, 'partners', req.body.partnerId);
@@ -177,7 +195,6 @@ app.get('/miscPartners', async (req, res ) => {
 app.post('/selectedPartner', async (req, res) => {
     console.log(req.body)
     const id = req.body.id
-    console.log(id, 'kjbvjkbasv;abvs')
     const q = query(collection(firestore, "partners"), where("partnerId", "==", id));
     const querySnapshot = await getDocs(q);
     querySnapshot.forEach(async (document) => {
